@@ -3,7 +3,7 @@
 **Hint uptake and disclosure when a reasoning model is forced to think in another language**
 
 Emrehan Dalaman. Term paper for *Advanced Topics in Computational Text and Media Sciences #2* (topic: Explainable AI),
-Universität Trier, SoSe 2026. Lecturer: Raghvi Baloni, M.Sc.
+Universität Trier, SoSe 2026. Lecturer: Raghvi Baloni, M.Sc., Univ.-Prof. Dr. Achim Rettinger
 
 **Paper:** [`paper/with-the-question-fixed.pdf`](paper/with-the-question-fixed.pdf)
 
