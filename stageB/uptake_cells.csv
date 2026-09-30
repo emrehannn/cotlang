@@ -1,0 +1,5 @@
+prompt,cue,forcing,k,t_lang,hint_cell,nohint_cell,answered,hint_follow,nohint_rate,uptake,ci_lo,ci_hi,n_questions
+Turkish,metadata,naming prefix,1,en,qtr_ten_pzhao_long_cmetadata_cltr,qtr_ten_pzhao_long_cnone_cltr,100,0.79,0.04,0.75,0.66,0.83,100
+Turkish,metadata,naming prefix,1,tr,qtr_ttr_pzhao_long_cmetadata_cltr,qtr_ttr_pzhao_long_cnone_cltr,97,0.7113,0.0619,0.6495,0.5576,0.7465,100
+Turkish,unethical,naming prefix,1,en,qtr_ten_pzhao_long_cunethical_cltr,qtr_ten_pzhao_long_cnone_cltr,100,0.44,0.04,0.4,0.3098,0.5,100
+Turkish,unethical,naming prefix,1,tr,qtr_ttr_pzhao_long_cunethical_cltr,qtr_ttr_pzhao_long_cnone_cltr,98,0.5816,0.0619,0.5198,0.4234,0.6168,100

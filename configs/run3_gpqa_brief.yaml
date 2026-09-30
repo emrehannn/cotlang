@@ -1,37 +1,26 @@
-# Run 3 add-on, the length factor: the same questions with "Keep your reasoning brief." added to the user turn, in
-# both trace languages (docs/PLAN.md, amendment "2026-09-12, run 3"). Shares the workdir of configs/run3_gpqa_slice.yaml,
-# so these cells sit beside the natural-length ones and the analysis has both.
-# Why it exists: Little 2026 (arXiv 2607.09786) shows that on Qwen3-4B/14B shorter chains verbalize a hint less often
-# while the hint's effect on the answer stays flat. Our Turkish traces are about half the length of our English ones
-# (run 2: 7,793 against 15,611 median tokens on the same questions), so a lower Turkish mention rate would have a ready
-# mundane explanation. Asking for brevity turns length from a confound into a factor we set: it gives a length-matched
-# comparison in both directions, and a training-free replication of Little's effect in a much longer regime than his.
-# Four cells, so uptake inside the brief regime has its own baseline instead of borrowing the natural-length one.
-# The hint is the unethical-information cue: run 2's strongest (uptake 0.444 English, 0.461 Turkish) and the one that
-# produced the most paired questions, so the disclosure denominators are largest here.
 name: run3_gpqa_brief
 seed: 20260906
-blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+blind: true
 
 paths:
-  workdir: runs/run3_gpqa           # a new workdir: Qwen3.5-9B traces must never mix with the pilot's Qwen3-4B ones
+  workdir: runs/run3_gpqa
   items: data/items_gpqa.jsonl
   items_exclude: data/items_exclude_gpqa.txt
   cache_dir: ~/.cache/cotlang
 
 items:
-  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  source: gpqa
   dataset: Idavidrein/gpqa
-  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  config: gpqa_diamond
   langs: [en]
   n: 100
-  require_label: null               # GPQA has no cultural-sensitivity label
+  require_label: null
   max_prompt_tokens: 400
-  tokenizer: Qwen/Qwen3-4B          # the cap that built this file; the file itself is fixed by the hash below
-  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
+  tokenizer: Qwen/Qwen3-4B
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2
   stratify_by: null
-  order_by: subject_category        # every prefix mirrors the whole set's domain mix
-  limit: 20                         # the first 20 items: 9 Physics, 9 Chemistry, 2 Biology
+  order_by: subject_category
+  limit: 20
 
 server:
   external: false
@@ -40,25 +29,22 @@ server:
   binary: llama-server
   model_repo: unsloth/Qwen3.5-9B-GGUF
   model_file: Qwen3.5-9B-Q5_K_M.gguf
-  parallel: 1                       # one trace at a time: the only way to give each trace 49,152 tokens
-  ctx_per_slot: 49152               # measured 7,477 MiB of 8,188. Two slots cannot reach this context even
-                                    # with an 8-bit KV cache (compute buffers fail to allocate), and two slots
-                                    # x 28,672 would repeat run 2's failure: half the English metadata traces
-                                    # of the tail probe ran past 28,672.
+  parallel: 1
+  ctx_per_slot: 49152
   extra_args: ["-ngl", "99", "-fa", "on"]
   startup_timeout_s: 300
 
-sampling:                           # Qwen3.5 thinking-mode recommendation (Qwen3 used temperature 0.6, no penalty)
+sampling:
   temperature: 1.0
   top_p: 0.95
   top_k: 20
   min_p: 0.0
   presence_penalty: 1.5
-  max_tokens: 48000                 # change this together with ctx_per_slot: a trace gets the smaller of the two
-  request_timeout_s: 5400           # a 48k trace at ~30 tokens/s is ~27 minutes
+  max_tokens: 48000
+  request_timeout_s: 5400
   k: 1
 
-cells:                              # 4 cells: English or Turkish trace x none or unethical, all with the brief instruction
+cells:
   - {q_lang: en, t_lang: en, prefix: zhao_long, cue: none, instruct: brief}
   - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: none, instruct: brief}
   - {q_lang: en, t_lang: en, prefix: zhao_long, cue: unethical, instruct: brief}

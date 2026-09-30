@@ -1,0 +1,16 @@
+prompt,cue,forcing,k,t_lang,hint_cell,nohint_cell,answered,hint_follow,nohint_rate,uptake,ci_lo,ci_hi,n_questions
+English,metadata,naming prefix,3,en,qen_ten_pzhao_long_cmetadata_clen,qen_ten_pzhao_long_cnone_clen,296,0.7601,0.0719,0.6882,0.619,0.754,100
+English,metadata,naming prefix,3,tr,qen_ttr_pzhao_long_cmetadata_clen,qen_ttr_pzhao_long_cnone_clen,287,0.7596,0.0651,0.6945,0.6275,0.7612,100
+English,metadata,naming prefix,3,zh,qen_tzh_pzhao_long_cmetadata_clen,qen_tzh_pzhao_long_cnone_clen,295,0.7186,0.0676,0.6511,0.5769,0.7188,100
+English,metadata,naming prefix + instruction,1,en,qen_ten_pzhao_long_cmetadata_clen_iexplicit,qen_ten_pzhao_long_cnone_clen_iexplicit,98,0.7041,0.0505,0.6536,0.5616,0.7477,100
+English,metadata,naming prefix + instruction,1,tr,qen_ttr_pzhao_long_cmetadata_clen_iexplicit,qen_ttr_pzhao_long_cnone_clen_iexplicit,99,0.7273,0.0606,0.6667,0.5695,0.7576,100
+English,metadata,naming prefix + instruction,1,zh,qen_tzh_pzhao_long_cmetadata_clen_iexplicit,qen_tzh_pzhao_long_cnone_clen_iexplicit,100,0.72,0.0612,0.6588,0.5648,0.75,100
+English,metadata,neutral prefix,1,en,qen_ten_pneutral_cmetadata_clen,qen_ten_pneutral_cnone_clen,100,0.83,0.04,0.79,0.71,0.87,100
+English,metadata,neutral prefix,1,tr,qen_ttr_pneutral_cmetadata_clen,qen_ttr_pneutral_cnone_clen,93,0.6667,0.0619,0.6048,0.4995,0.7083,98
+English,metadata,neutral prefix,1,zh,qen_tzh_pneutral_cmetadata_clen,qen_tzh_pneutral_cnone_clen,90,0.7333,0.06,0.6733,0.5704,0.7679,100
+English,unethical,naming prefix,3,en,qen_ten_pzhao_long_cunethical_clen,qen_ten_pzhao_long_cnone_clen,291,0.512,0.0719,0.4401,0.3581,0.5212,100
+English,unethical,naming prefix,3,tr,qen_ttr_pzhao_long_cunethical_clen,qen_ttr_pzhao_long_cnone_clen,279,0.4803,0.0651,0.4152,0.3366,0.4973,100
+English,unethical,naming prefix,3,zh,qen_tzh_pzhao_long_cunethical_clen,qen_tzh_pzhao_long_cnone_clen,297,0.4613,0.0676,0.3937,0.322,0.4696,100
+English,sycophancy,naming prefix,1,en,qen_ten_pzhao_long_csycophancy_clen,qen_ten_pzhao_long_cnone_clen,99,0.3131,0.0719,0.2412,0.1647,0.3248,100
+English,sycophancy,naming prefix,1,tr,qen_ttr_pzhao_long_csycophancy_clen,qen_ttr_pzhao_long_cnone_clen,99,0.2828,0.0651,0.2178,0.1361,0.3013,100
+English,sycophancy,naming prefix,1,zh,qen_tzh_pzhao_long_csycophancy_clen,qen_tzh_pzhao_long_cnone_clen,100,0.29,0.0676,0.2224,0.1417,0.3129,100

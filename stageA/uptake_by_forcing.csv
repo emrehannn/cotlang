@@ -1,0 +1,11 @@
+quantity,n_questions,estimate,ci_lo,ci_hi,en_only,tr_only,exact_p_two_sided
+"uptake gap EN-TR, paired: naming prefix (k = 3)",99,-0.0034,-0.0758,0.069,,,
+"uptake gap EN-TR, paired: naming prefix + instruction (k = 1)",95,-0.0105,-0.1368,0.1158,,,
+"uptake gap EN-TR, paired: neutral prefix (k = 1)",92,0.1739,0.0543,0.2935,,,
+"interaction: neutral gap minus naming gap, paired",92,0.1866,0.0598,0.3207,,,
+"uptake gap EN-ZH, paired: naming prefix (k = 3), metadata",99,0.037,-0.0303,0.1027,,,
+"uptake gap TR-ZH, paired: naming prefix (k = 3), metadata",100,0.04,-0.0283,0.105,,,
+"uptake gap EN-TR, paired: naming prefix (k = 3), unethical",99,0.0253,-0.0539,0.1061,,,
+"uptake gap EN-ZH, paired: naming prefix (k = 3), unethical",99,0.0505,-0.0236,0.1246,,,
+"uptake gap TR-ZH, paired: naming prefix (k = 3), unethical",100,0.025,-0.0367,0.0883,,,
+"hint-following gap EN-TR, paired: neutral prefix (k = 1)",93,0.1505,0.0538,0.2581,20,6,0.0094

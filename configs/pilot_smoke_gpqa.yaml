@@ -1,10 +1,6 @@
-# Pilot, GPQA smoke test: the first step of the GPQA arm (docs/PLAN.md, amendment "2026-09-11, pilot design").
-# Identical to configs/pilot_slice_gpqa.yaml except name, items.limit 10 and sampling.k 1 (also blind): 10 questions x 6 cells x 1
-# sample = 60 traces in the same workdir, so they are sample 0 of the first 10 items of the GPQA arm and are reused.
-# Its stop rules (compliance, unanswered traces, errors) are in the plan amendment and are checked before the arm goes on.
 name: pilot_smoke_gpqa
 seed: 20260906
-blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+blind: true
 
 paths:
   workdir: runs/pilot_gpqa
@@ -13,18 +9,17 @@ paths:
   cache_dir: ~/.cache/cotlang
 
 items:
-  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  source: gpqa
   dataset: Idavidrein/gpqa
-  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  config: gpqa_diamond
   langs: [en]
   n: 100
-  require_label: null               # GPQA has no cultural-sensitivity label
+  require_label: null
   max_prompt_tokens: 400
   tokenizer: Qwen/Qwen3-4B
-  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
-  stratify_by: null                 # one seeded sample in GPQA's own domain mix (stratifying by domain
-                                    # capped the set at 78: only 19 Biology questions, 12 under 400 tokens)
-  order_by: subject_category         # item order: every prefix (the pilot's first 40) mirrors the full mix
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2
+  stratify_by: null
+  order_by: subject_category
   limit: 10
 
 server:

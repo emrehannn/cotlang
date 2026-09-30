@@ -25,7 +25,7 @@ under a Turkish prompt.
   longer than a prefix that does not name it.
 - The model drifts out of the forced language mostly after its answer is settled. A plain instruction to think in the
   language shortens the traces mostly in that phase, without changing whether the hint is mentioned.
-- In a single-sample comparison, the hint moves English answers 19 points more often than Turkish ones when the
+- In a single-sample comparison, the hint moves English answers 17 points more often than Turkish ones when the
   language is not named, but about equally often when it is named.
 
 So comparisons between thinking languages need to fix and report how the language is forced and how the traces are
@@ -36,11 +36,16 @@ sampled.
 | path | what |
 |---|---|
 | `paper/with-the-question-fixed.pdf` | the paper |
-| `configs/` | the configuration of every run, from the smoke tests and pilots to Stage A, Stage B, the presence-penalty probe and the judge passes |
-| `cotlang/prompts.py` | every string the model sees: the task instruction, the hints, the prefilled sentences and the instruction arm, in the study's languages |
+| `cotlang/` | the experiment harness: sampling the items (`items.py`), the prompts, hints and prefilled sentences (`prompts.py`), generation against a vLLM server (`generate.py`, `server.py`), answer extraction (`extract.py`), the registered gates and language compliance (`gate.py`), the first-settlement split and the length measures (`phase.py`), the keyword mention regex (`mention.py`), the DeepSeek judge and its schema (`judge.py`), the analysis (`analysis.py`), and a guard that keeps GPQA text out of commits (`gpqa_guard.py`). `run.py` is the entry point |
+| `configs/` | the configuration of every run in the paper: Stage A (`stageA_core`, `stageA_extras`, `stageA_instruct`), Stage B (`stageB_tr`), the presence-penalty probe (`probe_pp0`, `probe_pp15`) and the judge passes (`*_judge`) |
+| `scripts/` | the analyses behind the paper's tables and figures: uptake (`uptake_cells.py`, `uptake_by_forcing.py`), disclosure (`disclosure_readout.py`, `keyword_mention.py`), the length checks (`length_defence.py`, `length_defence_extra.py`), the phase analysis (`phase_report.py`), Stage B against Stage A (`cross_stage.py`), the penalty probe (`probe_report.py`), the judge's test-retest (`judge_retest.py`) and the figures (`figures.py`) |
+| `stageA/`, `stageB/`, `probes/` | the per-cell results those scripts write, and the per-trace gate records (ids, answers, lengths, compliance; no question text) |
 
-The experiment harness and the analysis scripts are not published yet. Comments in the configs refer to files of the
-working repository that are not included here.
+Run with [uv](https://docs.astral.sh/uv/): `uv run python -m cotlang.run --config configs/<run>.yaml --stage <stage>`.
+`scripts/figures.py`, `scripts/uptake_cells.py` and `scripts/uptake_by_forcing.py` run from the files in this repository
+alone. The other scripts read the harness's own run folders (`runs/<workdir>/`), which hold the traces and are not
+published here; the same traces and judge labels are in the dataset below, in a joined format. Comments in the configs
+and scripts refer to planning documents of the working repository that are not included.
 
 ## Data
 

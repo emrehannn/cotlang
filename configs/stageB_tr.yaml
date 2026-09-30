@@ -1,17 +1,10 @@
-# Stage B, the Turkish-question mirror (docs/PLAN.md twenty-fifth addendum, 2026-09-15; docs/ROADMAP.md step 9).
-# Stage A held the question and the hint in English and moved only the thinking language. Stage B translates the whole
-# prompt -- instruction, question, options and hint -- into Turkish (emre's verified translation of the same 100 GPQA
-# Diamond questions, data/items_gpqa_tr.jsonl, same ids, letters and option order as data/items_gpqa.jsonl) and again
-# moves only the thinking language, Turkish or English. Together with Stage A that separates "the prompt is Turkish"
-# from "the thinking is Turkish", which Onyame's whole-prompt-translated setting cannot. Blind, gated and judged like
-# Stage A; k = 1 (600 traces); the Stage A no-hint English-question cells are the cross-stage baseline, paired by question.
 name: stageB_tr
-seed: 20260906                      # Stage A's seed: the same per-question hint letters and option order
+seed: 20260906
 blind: true
 
 paths:
-  workdir: runs/stageB_tr           # its own workdir, so its .blind marker cannot re-close the judged Stage A workdir
-  items: data/items_gpqa_tr.jsonl   # built by scripts/build_items_tr.py from the verified sheet; never rebuilt by run.py
+  workdir: runs/stageB_tr
+  items: data/items_gpqa_tr.jsonl
   items_exclude: data/items_exclude_gpqa.txt
   cache_dir: ~/.cache/cotlang
 
@@ -19,17 +12,17 @@ items:
   source: gpqa
   dataset: Idavidrein/gpqa
   config: gpqa_diamond
-  langs: [en, tr]                   # informational: the file is pre-built; cotlang/items.py would refuse to build it
+  langs: [en, tr]
   n: 100
   require_label: null
-  max_prompt_tokens: 400            # the cap that built the ENGLISH file; the Turkish prompts reach 500 tokens (Qwen3-4B tokenizer)
+  max_prompt_tokens: 400
   tokenizer: Qwen/Qwen3-4B
-  sha256: aa37267cf279fe47e5bd5af7787f6727d222fa28bc0a7f9ddf05ba16d871d892   # run.py refuses any other item file
+  sha256: aa37267cf279fe47e5bd5af7787f6727d222fa28bc0a7f9ddf05ba16d871d892
   stratify_by: null
   order_by: subject_category
   limit: null
 
-server:                             # identical to Stage A: rented A100 80GB, vLLM, bf16, through scripts/tunnel.sh
+server:
   external: true
   base_url: http://127.0.0.1:8080
   cache_ram_mib: 0
@@ -40,7 +33,7 @@ server:                             # identical to Stage A: rented A100 80GB, vL
   model_dtype: bfloat16
   model_note: "served by vLLM on a rented A100 80GB; no quantization"
 
-sampling:                           # IDENTICAL to Stage A (configs/stageA_core.yaml)
+sampling:
   temperature: 1.0
   top_p: 0.95
   top_k: 20
@@ -48,11 +41,8 @@ sampling:                           # IDENTICAL to Stage A (configs/stageA_core.
   presence_penalty: 0.0
   max_tokens: 64000
   request_timeout_s: 7200
-  k: 1                              # 6 cells x 100 questions = 600 traces, about 2.5 hours at Stage A's throughput
+  k: 1
 
-# CELL ORDER IS PRIORITY ORDER (cell-major generation): the two controls, then the metadata pair, then unethical, so an
-# early stop still leaves a complete Turkish/English metadata contrast. cue_lang defaults to q_lang, i.e. the hint is in
-# Turkish: the whole prompt is Turkish, which is the mirror this stage exists for.
 cells:
   - {q_lang: tr, t_lang: tr, prefix: zhao_long, cue: none}
   - {q_lang: tr, t_lang: en, prefix: zhao_long, cue: none}
@@ -61,7 +51,7 @@ cells:
   - {q_lang: tr, t_lang: tr, prefix: zhao_long, cue: unethical}
   - {q_lang: tr, t_lang: en, prefix: zhao_long, cue: unethical}
 
-judge:                              # a GENERATION config; judging runs from configs/stageB_tr_judge.yaml
+judge:
   enabled: true
   backend: openai
   base_url: https://api.deepseek.com

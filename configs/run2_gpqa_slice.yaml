@@ -1,39 +1,26 @@
-# Run 2, GPQA slice: the first slice of a GPQA arm on Qwen3.5-9B (docs/PLAN.md, amendment "2026-09-12, run 2").
-# Why this exists: the pilot's GPQA arm stopped because Qwen3-4B could not finish its reasoning inside 7,900 tokens
-# (21 of 60 traces unanswered), and its MMLU arm had no hint with headroom because Global-MMLU is too easy for the
-# model. Run 2 changes three things at once, all measured on 2026-09-12 before this config was written:
-#   model   Qwen3.5-9B Q5_K_M GGUF (sha256 dc2a39aef291f91a9116ad214058da0d86eb648743a124bd8c333787c4b9c91c).
-#           In a 10-trace probe (Turkish thinking, sycophancy hint, the first 10 GPQA items) it left 0 of 10 traces
-#           unanswered with a mean of 11,625 completion tokens, at mean prose compliance 0.936; Qwen3.5-4B Q8_0 on the
-#           same 10 items truncated 2 and drifted out of Turkish (mean prose compliance 0.647).
-#   budget  2 slots x 24,576 tokens (7,503 MiB of 8,188 on the RTX 4060, measured), so max_tokens 24,000 instead of
-#           7,900. docs/PLAN.md asks for no length cap in Stage A/B; 7,900 was a hardware compromise.
-#   cues    the two registered hints plus Chen et al.'s misaligned "unethical information" hint (cotlang/prompts.py).
-# Cell order is deliberate: the run is cell-major, so if it is stopped early every finished cell is complete and the
-# pairs arrive in priority order (baselines, then sycophancy, then metadata, then unethical).
 name: run2_gpqa_slice
 seed: 20260906
-blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+blind: true
 
 paths:
-  workdir: runs/run2_gpqa           # a new workdir: Qwen3.5-9B traces must never mix with the pilot's Qwen3-4B ones
+  workdir: runs/run2_gpqa
   items: data/items_gpqa.jsonl
   items_exclude: data/items_exclude_gpqa.txt
   cache_dir: ~/.cache/cotlang
 
 items:
-  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  source: gpqa
   dataset: Idavidrein/gpqa
-  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  config: gpqa_diamond
   langs: [en]
   n: 100
-  require_label: null               # GPQA has no cultural-sensitivity label
+  require_label: null
   max_prompt_tokens: 400
-  tokenizer: Qwen/Qwen3-4B          # the cap that built this file; the file itself is fixed by the hash below
-  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
+  tokenizer: Qwen/Qwen3-4B
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2
   stratify_by: null
-  order_by: subject_category        # every prefix mirrors the whole set's domain mix
-  limit: 20                         # the first 20 items: 9 Physics, 9 Chemistry, 2 Biology
+  order_by: subject_category
+  limit: 20
 
 server:
   external: false
@@ -47,17 +34,17 @@ server:
   extra_args: ["-ngl", "99", "-fa", "on"]
   startup_timeout_s: 300
 
-sampling:                           # Qwen3.5 thinking-mode recommendation (Qwen3 used temperature 0.6, no penalty)
+sampling:
   temperature: 1.0
   top_p: 0.95
   top_k: 20
   min_p: 0.0
   presence_penalty: 1.5
-  max_tokens: 24000                 # generate.py lowers this to the room left in the slot
-  request_timeout_s: 3600           # a 24k trace at ~30 tokens/s per slot is ~13 minutes
+  max_tokens: 24000
+  request_timeout_s: 3600
   k: 1
 
-cells:                              # 8 cells: English or Turkish trace x none, sycophancy, metadata, unethical
+cells:
   - {q_lang: en, t_lang: en, prefix: zhao, cue: none}
   - {q_lang: en, t_lang: tr, prefix: zhao, cue: none}
   - {q_lang: en, t_lang: en, prefix: zhao, cue: sycophancy}

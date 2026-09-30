@@ -1,61 +1,49 @@
-# Run 4, GPQA slice on rented compute: the same design as run 3, served in bfloat16 with a 64k context
-# (docs/PLAN.md, amendment "2026-09-13, run 4" — to be written once the endpoint is measured).
-# Why a new run and a new workdir: the model is no longer the Q5_K_M GGUF but the full-precision checkpoint, so these
-# traces are a different numerical model and must never be pooled with the pilot's, run 2's or run 3's. The upgrade is
-# deliberate: it removes the quantization caveat from every number in the paper.
-# What changed from run 3:
-#   server    external: the endpoint is an OpenAI-compatible server (vLLM) on a rented A100 80GB, reached through an
-#             SSH tunnel; cotlang never launches or downloads it. base_url is filled in when the instance exists.
-#   context   65,536 per sequence, max_tokens 64,000 (was 49,152 / 48,000). At ~25 KiB per token the KV cache is about
-#             1.6 GiB per trace, so an 80 GB card holds roughly 36 at once after 18 GB of bf16 weights.
-#   parallel  24 concurrent traces (client-side concurrency), to be raised to whatever the server reports it can hold.
-# Everything else is run 3's: same questions, same hint set, same prefix, same sampling, same blinding.
 name: run4_gpqa_slice
 seed: 20260906
-blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+blind: true
 
 paths:
-  workdir: runs/run4_gpqa           # a new workdir: Qwen3.5-9B traces must never mix with the pilot's Qwen3-4B ones
+  workdir: runs/run4_gpqa
   items: data/items_gpqa.jsonl
   items_exclude: data/items_exclude_gpqa.txt
   cache_dir: ~/.cache/cotlang
 
 items:
-  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  source: gpqa
   dataset: Idavidrein/gpqa
-  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  config: gpqa_diamond
   langs: [en]
   n: 100
-  require_label: null               # GPQA has no cultural-sensitivity label
+  require_label: null
   max_prompt_tokens: 400
-  tokenizer: Qwen/Qwen3-4B          # the cap that built this file; the file itself is fixed by the hash below
-  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
+  tokenizer: Qwen/Qwen3-4B
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2
   stratify_by: null
-  order_by: subject_category        # every prefix mirrors the whole set's domain mix
-  limit: 20                         # the first 20 items: 9 Physics, 9 Chemistry, 2 Biology
+  order_by: subject_category
+  limit: 20
 
 server:
-  external: true                    # a server someone else started; run.py only health-checks it
-  base_url: http://127.0.0.1:8080   # the local end of emre's SSH tunnel to the rented box (-L 8080:localhost:8080)
+  external: true
+  base_url: http://127.0.0.1:8080
   cache_ram_mib: 0
-  parallel: 24                      # concurrent traces we ask for; raise to the server's reported capacity
-  ctx_per_slot: 65536               # 64k context per sequence, the model's listed window
+  parallel: 24
+  ctx_per_slot: 65536
   startup_timeout_s: 300
-  model_id: Qwen/Qwen3.5-9B         # provenance only, not read by the code: what the endpoint must be serving,
-  model_dtype: bfloat16             # in this precision. The run's report records the served model's revision,
-  model_note: "served by vLLM on a rented A100 80GB; no quantization"   # the vLLM version and the GPU.
+  model_id: Qwen/Qwen3.5-9B
+  model_dtype: bfloat16
+  model_note: "served by vLLM on a rented A100 80GB; no quantization"
 
-sampling:                           # Qwen3.5 thinking-mode recommendation (Qwen3 used temperature 0.6, no penalty)
+sampling:
   temperature: 1.0
   top_p: 0.95
   top_k: 20
   min_p: 0.0
   presence_penalty: 1.5
-  max_tokens: 64000                 # change this together with ctx_per_slot: a trace gets the smaller of the two
-  request_timeout_s: 7200           # a 64k trace at a per-stream 30 tokens/s is ~36 minutes
+  max_tokens: 64000
+  request_timeout_s: 7200
   k: 1
 
-cells:                              # 8 cells: English or Turkish trace x none, sycophancy, metadata, unethical
+cells:
   - {q_lang: en, t_lang: en, prefix: zhao_long, cue: none}
   - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: none}
   - {q_lang: en, t_lang: en, prefix: zhao_long, cue: sycophancy}

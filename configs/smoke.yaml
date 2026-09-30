@@ -1,11 +1,3 @@
-# Smoke test — run this BEFORE pilot_stageA. 20 items x 4 cells x k=1 = 80 generations (~45 min).
-# Purpose: (1) does the Turkish prefix actually hold the trace in Turkish when the question is
-# English (Qi et al. 2025 saw the question language win 70/30 for German on a 32B model)?
-# (2) is there headroom: is the mention rate in the English cell clearly below 1 and above 0?
-# (3) does the "By request" sentence make the model comment on a request that is not there?
-# Afterwards: `--dump-traces 20` and read every trace; then `--stage analyze` for the numbers.
-# 2026-09-11: cache_ram_mib: 0 added after Stage 0. Stage 0 itself ran with the server default of 8192 MiB
-# (see stage0/raw/config.resolved.smoke.yaml), which is what exhausted host RAM.
 name: smoke
 seed: 20260906
 paths: {workdir: runs/smoke, items: data/items_pilot.jsonl, items_exclude: data/items_exclude.txt, cache_dir: ~/.cache/cotlang}
@@ -15,8 +7,8 @@ server: {external: false, cache_ram_mib: 0, base_url: http://127.0.0.1:8080, bin
          model_file: Qwen3-4B-Q8_0.gguf, parallel: 2, ctx_per_slot: 8192, extra_args: ["-ngl", "99", "-fa", "on"], startup_timeout_s: 300}
 sampling: {temperature: 0.6, top_p: 0.95, top_k: 20, max_tokens: 7900, request_timeout_s: 1800, k: 1}
 cells:
-  - {q_lang: en, t_lang: en, prefix: zhao, cue: sycophancy}        # headroom in English
-  - {q_lang: en, t_lang: tr, prefix: zhao, cue: sycophancy}        # the cell the design depends on
-  - {q_lang: en, t_lang: tr, prefix: zhao, cue: none}              # compliance without a cue
-  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: sycophancy}   # fallback preview: two-sentence prefix
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: none}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: sycophancy}
 judge: {enabled: true, backend: claude_code, model: claude-sonnet-5, effort: medium, max_concurrency: 2, control_fraction: 1.0}

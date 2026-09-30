@@ -1,42 +1,26 @@
-# Run 3, GPQA slice: run 2 repeated with the two fixes it asked for (docs/PLAN.md, amendment "2026-09-12, run 3").
-# Run 2 (run2/REPORT.md) was eligible on nothing: English cells left 50-75% of traces unanswered at a 24,000-token cap,
-# and a minority of Turkish traces switched to English outright, pulling the no-hint cell's mean prose compliance to
-# 0.836 against a 0.85 bar. All three hints cleared the uptake floor several times over, so the design is sound and
-# only the mechanics failed. Both fixes were measured before this config was written (probes in
-# ~/claude-temp/2026-09-12-drift-and-tail/, not research data):
-#   prefix  zhao_long, the plan's first registered fallback: the two-sentence opener. On the same 10 questions it took
-#           mean prose compliance from 0.777 to 0.962 with 0 of 10 traces under 0.8, and all 10 answered. The explicit
-#           instruction, the second fallback, left one trace at 0.428, so the gentler fix wins. Applied to both
-#           trace languages, so the change is symmetric.
-#   budget  1 slot x 49,152 tokens, max_tokens 48,000. A tail probe on the worst English cell (metadata hint, 6
-#           questions, 45,000-token cap) found 3 of 6 traces running past 28,672 and 5 of 6 answered, so two
-#           slots at 28,672 would have repeated run 2's failure. Two slots cannot reach 45k-49k per trace on
-#           this card even with an 8-bit KV cache. One slot halves throughput: about 34 hours for all 240 traces.
-# Everything else is run 2's: same model, sampling, items, cells, seed, blinding.
-# The brief-instruction cells live in configs/run3_gpqa_brief.yaml and share this workdir.
 name: run3_gpqa_slice
 seed: 20260906
-blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+blind: true
 
 paths:
-  workdir: runs/run3_gpqa           # a new workdir: Qwen3.5-9B traces must never mix with the pilot's Qwen3-4B ones
+  workdir: runs/run3_gpqa
   items: data/items_gpqa.jsonl
   items_exclude: data/items_exclude_gpqa.txt
   cache_dir: ~/.cache/cotlang
 
 items:
-  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  source: gpqa
   dataset: Idavidrein/gpqa
-  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  config: gpqa_diamond
   langs: [en]
   n: 100
-  require_label: null               # GPQA has no cultural-sensitivity label
+  require_label: null
   max_prompt_tokens: 400
-  tokenizer: Qwen/Qwen3-4B          # the cap that built this file; the file itself is fixed by the hash below
-  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
+  tokenizer: Qwen/Qwen3-4B
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2
   stratify_by: null
-  order_by: subject_category        # every prefix mirrors the whole set's domain mix
-  limit: 20                         # the first 20 items: 9 Physics, 9 Chemistry, 2 Biology
+  order_by: subject_category
+  limit: 20
 
 server:
   external: false
@@ -45,25 +29,22 @@ server:
   binary: llama-server
   model_repo: unsloth/Qwen3.5-9B-GGUF
   model_file: Qwen3.5-9B-Q5_K_M.gguf
-  parallel: 1                       # one trace at a time: the only way to give each trace 49,152 tokens
-  ctx_per_slot: 49152               # measured 7,477 MiB of 8,188. Two slots cannot reach this context even
-                                    # with an 8-bit KV cache (compute buffers fail to allocate), and two slots
-                                    # x 28,672 would repeat run 2's failure: half the English metadata traces
-                                    # of the tail probe ran past 28,672.
+  parallel: 1
+  ctx_per_slot: 49152
   extra_args: ["-ngl", "99", "-fa", "on"]
   startup_timeout_s: 300
 
-sampling:                           # Qwen3.5 thinking-mode recommendation (Qwen3 used temperature 0.6, no penalty)
+sampling:
   temperature: 1.0
   top_p: 0.95
   top_k: 20
   min_p: 0.0
   presence_penalty: 1.5
-  max_tokens: 48000                 # change this together with ctx_per_slot: a trace gets the smaller of the two
-  request_timeout_s: 5400           # a 48k trace at ~30 tokens/s is ~27 minutes
+  max_tokens: 48000
+  request_timeout_s: 5400
   k: 1
 
-cells:                              # 8 cells: English or Turkish trace x none, sycophancy, metadata, unethical
+cells:
   - {q_lang: en, t_lang: en, prefix: zhao_long, cue: none}
   - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: none}
   - {q_lang: en, t_lang: en, prefix: zhao_long, cue: sycophancy}
