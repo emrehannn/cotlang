@@ -1,0 +1,94 @@
+# Stage A, INSTRUCTION ARM (docs/PLAN.md, twelfth addendum, 2026-09-14). A registered SECONDARY experiment, run after
+# the core and the extras into the same blind workdir: the explicit instruction ON ("Please always think in X.",
+# in the question language, cotlang/prompts.py THINK_INSTRUCTION), the same zhao_long prefix, the same 100 items,
+# one sample each. Every cell pairs by item with the core prefix-only cell of the same language and hint; the cell
+# keys carry the _iexplicit suffix so nothing collides and nothing is pooled into the primary contrast.
+# What it tests (outline 7b): whether the instruction cuts the post-commitment tail and leaves the derivation, in
+# Turkish and Chinese; whether ENGLISH shortens under its own instruction (awareness vs language); whether the
+# hint's first-mention position survives while post-commitment mentions fall; compliance and the Chinese phase switch.
+# Sampling is Stage A's adopted sampling (presence_penalty 0, tenth addendum).
+name: stageA_instruct
+seed: 20260906
+blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+
+paths:
+  workdir: runs/stageA_gpqa        # SHARED with stageA_core and stageA_extras: every cell finds its item-paired twin
+  items: data/items_gpqa.jsonl
+  items_exclude: data/items_exclude_gpqa.txt
+  cache_dir: ~/.cache/cotlang
+
+items:
+  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  dataset: Idavidrein/gpqa
+  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  langs: [en]
+  n: 100
+  require_label: null               # GPQA has no cultural-sensitivity label
+  max_prompt_tokens: 400
+  tokenizer: Qwen/Qwen3-4B          # the cap that built this file; the file itself is fixed by the hash below
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
+  stratify_by: null
+  order_by: subject_category        # every prefix mirrors the whole set's domain mix
+  limit: null                       # all 100 questions, not run 4's first 20
+
+server:
+  external: true                    # a server someone else started; run.py only health-checks it
+  base_url: http://127.0.0.1:8080   # the local end of emre's SSH tunnel to the rented box (scripts/tunnel.sh: -L 8080:localhost:18000)
+  cache_ram_mib: 0
+  parallel: 64                      # matched to --max-num-seqs 64 on the server (scripts/vllm-args.conf).
+                                      # Client-side concurrency only says how many requests are in flight; the server
+                                      # decides how many it runs at once, so both have to be raised. If the instance
+                                      # is left at 36, the extra requests simply queue -- harmless, just not faster.
+  ctx_per_slot: 65536               # 64k context per sequence, the model's listed window
+  startup_timeout_s: 300
+  model_id: Qwen/Qwen3.5-9B         # provenance only, not read by the code: what the endpoint must be serving,
+  model_dtype: bfloat16             # in this precision. The run's report records the served model's revision,
+  model_note: "served by vLLM on a rented A100 80GB; no quantization"   # the vLLM version and the GPU.
+
+sampling:                           # Qwen3.5 thinking-mode recommendation (Qwen3 used temperature 0.6, no penalty)
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 20
+  min_p: 0.0
+  presence_penalty: 0.0
+  max_tokens: 64000                 # change this together with ctx_per_slot: a trace gets the smaller of the two
+  request_timeout_s: 7200           # a 64k trace at a per-stream 30 tokens/s is ~36 minutes
+  k: 1                                # one sample each: these are controls and a comparison, not the primary contrast
+# The three no-hint cells come first so an early stop still gives the length test; gen_ids and per-sample seeds are
+# independent of a cell's position, so ordering changes no trace.
+cells:                              # 6 cells at k = 1, run after the extras into the same workdir (PLAN twelfth addendum)
+  # The instruction arm: the explicit instruction ON ("please think in X", in the question language; cotlang/prompts.py
+  # THINK_INSTRUCTION), the same zhao_long prefix, the same 100 questions. Pairs by item with the core zhao_long
+  # none/metadata cells (prefix only) for the phase-deletion test in outline 7b: does the instruction shorten the
+  # post-commitment tail and not the derivation, and does ENGLISH shorten under its own instruction (awareness vs
+  # language)? Cell keys carry the _iexplicit suffix, so nothing collides with the core or the extras.
+  - {q_lang: en, t_lang: en, prefix: zhao_long, cue: none, instruct: explicit}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: none, instruct: explicit}
+  - {q_lang: en, t_lang: zh, prefix: zhao_long, cue: none, instruct: explicit}
+  - {q_lang: en, t_lang: en, prefix: zhao_long, cue: metadata, instruct: explicit}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: metadata, instruct: explicit}
+  - {q_lang: en, t_lang: zh, prefix: zhao_long, cue: metadata, instruct: explicit}
+
+judge:
+  enabled: true
+  backend: openai                    # DeepSeek over its OpenAI-compatible API: the registered bulk judge. Never the
+  base_url: https://api.deepseek.com # Claude API or the subscription (emre, 2026-09-13). Key from $DEEPSEEK_API_KEY.
+  api_key_env: DEEPSEEK_API_KEY
+  model: deepseek-flash              # from GET /v1/models on 2026-09-14: deepseek-flash, deepseek-v4-pro.
+                                     # deepseek-chat does not exist on this account. Recorded per label.
+  temperature: 0.0
+  max_tokens: 2000
+  effort: medium                     # unused by this backend; kept so the cache key stays well-formed
+  max_concurrency: 4
+  max_input_tokens: 500000           # DeepSeek V4 serves a ~1M context, so nothing in Stage A truncates:
+                                     # our longest selected trace estimates at ~101k input tokens. The guard
+                                     # stays as a safety net, and if it ever fires the trace keeps its think
+                                     # HEAD and whole final answer and is flagged `input_truncated`, so a
+                                     # null index counts as censored (PLAN fifteenth addendum, item 4).
+  samples_per_item: 1                 # judge only the first sample of each question: the extra samples measure
+                                      # dispersion of hint-following, which is read off answers and needs no judge.
+  control_fraction: 0.35              # 35% of this config's no-hint controls (~106), sampled by ITEM so they pair with the
+                                      # core's controls (judge.select_for_judging, review F7)
+  nonfollower_fraction: 0.0           # the primary metric conditions on hint-followers; non-followers are released
+                                      # unjudged with the dataset. Followers ~225 (3 cells x 100 x ~0.75 p_hint) + ~106
+                                      # controls = ~331 labels for this arm, judged LAST, after the core and the extras.

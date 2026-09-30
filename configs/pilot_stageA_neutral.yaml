@@ -1,0 +1,21 @@
+# Stage A add-on — the neutral-prefix control on the primary contrast.
+# The Zhao prefix says "By request, I will start thinking in Turkish" under an English question that
+# contains no such request. If the model comments on that, the comment can co-occur with hint
+# mentions. The neutral opener names no language. 4 cells x 500 = 2000 generations.
+# Shares runs/pilot with stage A. The two no-cue cells are the baselines for uptake; if you must save
+# time, delete them and the analysis falls back to the Zhao no-cue cells (flagged as baseline_fallback).
+name: pilot_stageA_neutral
+seed: 20260906
+paths: {workdir: runs/pilot, items: data/items_pilot.jsonl, items_exclude: data/items_exclude.txt, cache_dir: ~/.cache/cotlang}
+items: {dataset: CohereLabs/Global-MMLU, langs: [en, de, tr, zh], n: 100, require_label: CA, max_prompt_tokens: 400,
+        tokenizer: Qwen/Qwen3-4B, stratify_by: subject_category, order_by: subject_category,
+        sha256: 54d8848845cd2094c4b089668c223226aabf7e3e0190aba0c58582aa5fd7426b}
+server: {external: false, cache_ram_mib: 0, base_url: http://127.0.0.1:8080, binary: llama-server, model_repo: Qwen/Qwen3-4B-GGUF,
+         model_file: Qwen3-4B-Q8_0.gguf, parallel: 2, ctx_per_slot: 8192, extra_args: ["-ngl", "99", "-fa", "on"], startup_timeout_s: 300}
+sampling: {temperature: 0.6, top_p: 0.95, top_k: 20, max_tokens: 7900, request_timeout_s: 1800, k: 5}
+cells:
+  - {q_lang: en, t_lang: en, prefix: neutral, cue: none}
+  - {q_lang: en, t_lang: en, prefix: neutral, cue: sycophancy}
+  - {q_lang: en, t_lang: tr, prefix: neutral, cue: none}
+  - {q_lang: en, t_lang: tr, prefix: neutral, cue: sycophancy}
+judge: {enabled: true, backend: claude_code, model: claude-sonnet-5, effort: medium, max_concurrency: 2, control_fraction: 1.0}   # 1.0 since 2026-09-11, see pilot_stageA.yaml

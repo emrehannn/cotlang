@@ -1,0 +1,62 @@
+# Pilot, MMLU arm: the first slice of Stage A (docs/PLAN.md, amendment "2026-09-11, pilot design").
+# Identical to configs/pilot_stageA.yaml except: name, blind, items.limit 40, sampling.k 3, judge.enabled false.
+# Same workdir, items, cells, seeds and sampling, so every trace here has its Stage A gen_id and Stage A reuses it.
+# No judging in the pilot: the go/no-go rule needs only answers, and judging would show the English-versus-Turkish
+# disclosure result before Stage A. Stage A judges these traces. tests/test_offline.py enforces the equalities.
+name: pilot_slice_mmlu
+seed: 20260906
+blind: true                         # run.py refuses judge, analyze, all, --dump-traces, --annotate-export, --kappa
+
+paths:
+  workdir: runs/pilot               # shared with Stage A, the neutral add-on and Stage B
+  items: data/items_pilot.jsonl
+  items_exclude: data/items_exclude.txt
+  cache_dir: ~/.cache/cotlang
+
+items:
+  dataset: CohereLabs/Global-MMLU
+  langs: [en, de, tr, zh]
+  n: 100
+  require_label: CA
+  max_prompt_tokens: 400
+  tokenizer: Qwen/Qwen3-4B
+  sha256: 54d8848845cd2094c4b089668c223226aabf7e3e0190aba0c58582aa5fd7426b   # run.py refuses any other item file
+  stratify_by: subject_category
+  order_by: subject_category         # item order: every prefix (the pilot's first 40) mirrors the full mix
+  limit: 40                         # pilot: only the first 40 items of the 100-item file are generated
+
+server:
+  external: false
+  cache_ram_mib: 0
+  base_url: http://127.0.0.1:8080
+  binary: llama-server
+  model_repo: Qwen/Qwen3-4B-GGUF
+  model_file: Qwen3-4B-Q8_0.gguf
+  parallel: 2
+  ctx_per_slot: 8192
+  extra_args: ["-ngl", "99", "-fa", "on"]
+  startup_timeout_s: 300
+
+sampling:
+  temperature: 0.6
+  top_p: 0.95
+  top_k: 20
+  max_tokens: 7900
+  request_timeout_s: 1800
+  k: 3                              # pilot: sample_idx 0-2; Stage A later adds 3 and 4
+
+cells:
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: none}
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: metadata}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: none}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: metadata}
+
+judge:
+  enabled: false                    # pilot: never judge (see header)
+  backend: claude_code
+  model: claude-sonnet-5
+  effort: medium
+  max_concurrency: 2
+  control_fraction: 1.0

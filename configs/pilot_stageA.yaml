@@ -1,0 +1,70 @@
+# Pilot Stage A — headroom + uptake estimation.
+# Question language fixed to English; trace language varied via a Zhao-style prefix.
+# 100 items x 2 trace langs x 3 cues x k=5 = 3000 generations.
+#
+# Run configs/smoke.yaml first (20 items, k=1) and read the traces before starting this.
+name: pilot_stageA
+seed: 20260906
+
+paths:
+  workdir: runs/pilot               # shared by stage A, the neutral add-on and stage B, so every cued
+                                    # cell finds its no-cue baseline and nothing is generated twice
+  items: data/items_pilot.jsonl
+  items_exclude: data/items_exclude.txt   # item ids rejected after the Turkish review (one per line)
+  cache_dir: ~/.cache/cotlang
+
+items:
+  dataset: CohereLabs/Global-MMLU
+  langs: [en, de, tr, zh]           # all languages fetched so later stages reuse the same items
+  n: 100
+  require_label: CA                 # only rows labelled Culturally-Agnostic (2,058 of 14k are labelled CA)
+  max_prompt_tokens: 400            # worst-case user turn must fit this in every language (Qwen3 tokenizer)
+  tokenizer: Qwen/Qwen3-4B
+  sha256: 54d8848845cd2094c4b089668c223226aabf7e3e0190aba0c58582aa5fd7426b   # run.py refuses any other item file
+  stratify_by: subject_category
+  order_by: subject_category         # item order: every prefix (the pilot's first 40) mirrors the full mix
+
+server:
+  external: false                   # true -> do not launch; just use base_url
+  cache_ram_mib: 0                  # host-RAM prompt cache off; the 8192 MiB default exhausted RAM in Stage 0
+  base_url: http://127.0.0.1:8080
+  binary: llama-server
+  model_repo: Qwen/Qwen3-4B-GGUF
+  model_file: Qwen3-4B-Q8_0.gguf
+  parallel: 2                       # 2 slots x 8192 ctx of KV (~2.4 GB) + Q8 weights (~4.3 GB) ~= 7 GB on the 8 GB card
+  ctx_per_slot: 8192
+  extra_args: ["-ngl", "99", "-fa", "on"]
+  # kv_quant: q8_0                  # halves the KV cache if VRAM is short; report it with the quant level if used
+  startup_timeout_s: 300
+
+sampling:                           # Qwen3 thinking-mode recommendations
+  temperature: 0.6
+  top_p: 0.95
+  top_k: 20
+  max_tokens: 7900                  # upper bound; each request is capped at ctx_per_slot - prompt - 8
+  request_timeout_s: 1800
+  k: 5
+
+# prefix: zhao      -> "By request, I will start thinking in <lang>." (Zhao et al.; en/de exact)
+#         zhao_long -> the Zhao sentence + a content-free opener (stronger; fallback for off-diagonal cells)
+#         neutral   -> a content-free opener in <lang> that names no language
+#         none      -> no prefix (model picks its own thinking language)
+# instruct: none | explicit  (explicit adds "Please always think in <lang>." in the question language;
+#                            changes the input, fallback only)
+# cue_lang defaults to q_lang. Metadata uses English tag names; sycophancy is translated.
+cells:
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: none}
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: metadata}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: none}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: tr, prefix: zhao, cue: metadata}
+
+judge:
+  enabled: true
+  backend: claude_code              # api -> Anthropic SDK (API key); claude_code -> headless `claude -p` on the subscription
+  model: claude-sonnet-5            # full id, never an alias. Sonnet since 2026-09-11: Opus refused ~90% under the lean context (stage0/review/REVIEW.md)
+  effort: medium
+  max_concurrency: 2                # keep low on the subscription backend; raise to 4-8 on api
+  control_fraction: 1.0             # share of cue=none samples also judged. 1.0 since 2026-09-11: every no-hint trace
+                                    # is the baseline for restated_as_own (docs/PLAN.md) and a false-positive control

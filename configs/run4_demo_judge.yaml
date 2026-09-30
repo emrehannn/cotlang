@@ -1,0 +1,98 @@
+# DEMO of the judging machinery, 2026-09-14. Identical to configs/run4_judge.yaml except for the judge block:
+# the backend is DeepSeek (the registered bulk judge) instead of the retired claude_code setting, and judge.limit
+# caps the invocation at five traces so the whole path can be bought for a few cents before the real run. The
+# labels it writes are real run-4 labels in runs/run4_gpqa/judged.jsonl; a later unlimited run continues from them.
+# emre disabled DeepSeek data retention and training on 2026-09-14, which is what permits GPQA text to travel.
+#
+# Judging run 4 (docs/PLAN.md, amendment "2026-09-13, Stage A design"). Same workdir and same item file as
+# configs/run4_gpqa_slice.yaml; the only differences are that this config is not blind and that judging is on.
+# The harness refuses --unblind to a config that is itself blind, by design: a blind config can never open its own
+# workdir. This is the non-blind twin that removes the marker, the way the Stage A brief was always meant to.
+# Why run 4 may be opened: it is the EXPLORATORY slice. docs/PAPER-OUTLINE.md Section 2 registers the discipline --
+# the exploratory slice estimates the effect and sizes the confirmatory run, which is then generated and analysed
+# without further peeking. Stage A (configs/stageA_core.yaml) stays blind, and no run-4 number is ever pooled with it.
+# What this buys: the first disclosure numbers this project has ever had, for about 70 labels rather than 6,000.
+name: run4_demo_judge
+seed: 20260906
+blind: false                        # the exploratory slice, deliberately opened (see the header)
+
+paths:
+  workdir: runs/run4_gpqa           # a new workdir: Qwen3.5-9B traces must never mix with the pilot's Qwen3-4B ones
+  items: data/items_gpqa.jsonl
+  items_exclude: data/items_exclude_gpqa.txt
+  cache_dir: ~/.cache/cotlang
+
+items:
+  source: gpqa                      # cotlang/items.py: _load_gpqa, answers shuffled into A-D with a seeded order
+  dataset: Idavidrein/gpqa
+  config: gpqa_diamond              # 198 questions: Chemistry 93, Physics 86, Biology 19
+  langs: [en]
+  n: 100
+  require_label: null               # GPQA has no cultural-sensitivity label
+  max_prompt_tokens: 400
+  tokenizer: Qwen/Qwen3-4B          # the cap that built this file; the file itself is fixed by the hash below
+  sha256: b011fc9e188fc19d1fd5cecf89bfe904e9f415c023235eb06be1ae184991dcc2   # run.py refuses any other item file
+  stratify_by: null
+  order_by: subject_category        # every prefix mirrors the whole set's domain mix
+  limit: 20                         # the first 20 items: 9 Physics, 9 Chemistry, 2 Biology
+
+server:
+  external: true                    # a server someone else started; run.py only health-checks it
+  base_url: http://127.0.0.1:8080   # the local end of emre's SSH tunnel to the rented box (-L 8080:localhost:8080)
+  cache_ram_mib: 0
+  parallel: 24                      # concurrent traces we ask for; raise to the server's reported capacity
+  ctx_per_slot: 65536               # 64k context per sequence, the model's listed window
+  startup_timeout_s: 300
+  model_id: Qwen/Qwen3.5-9B         # provenance only, not read by the code: what the endpoint must be serving,
+  model_dtype: bfloat16             # in this precision. The run's report records the served model's revision,
+  model_note: "served by vLLM on a rented A100 80GB; no quantization"   # the vLLM version and the GPU.
+
+sampling:                           # Qwen3.5 thinking-mode recommendation (Qwen3 used temperature 0.6, no penalty)
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 20
+  min_p: 0.0
+  presence_penalty: 1.5
+  max_tokens: 64000                 # change this together with ctx_per_slot: a trace gets the smaller of the two
+  request_timeout_s: 7200           # a 64k trace at a per-stream 30 tokens/s is ~36 minutes
+  k: 1
+
+cells:                              # 8 cells: English or Turkish trace x none, sycophancy, metadata, unethical
+  - {q_lang: en, t_lang: en, prefix: zhao_long, cue: none}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: none}
+  - {q_lang: en, t_lang: en, prefix: zhao_long, cue: sycophancy}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: sycophancy}
+  - {q_lang: en, t_lang: en, prefix: zhao_long, cue: metadata}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: metadata}
+  - {q_lang: en, t_lang: en, prefix: zhao_long, cue: unethical}
+  - {q_lang: en, t_lang: tr, prefix: zhao_long, cue: unethical}
+
+judge:
+  enabled: true
+  backend: openai                    # DeepSeek over its OpenAI-compatible API. run4_judge.yaml still names the retired
+  base_url: https://api.deepseek.com # claude_code backend; this twin is the one that matches the registered decision
+  api_key_env: DEEPSEEK_API_KEY      # (emre, 2026-09-13: the judge is DeepSeek, never the Claude API or subscription).
+  model: deepseek-flash
+  temperature: 0.0                   # VENDOR-CONFIRMED DECORATIVE, 2026-09-14. DeepSeek's docs: thinking mode "does
+                                     # not support the temperature, presence_penalty, or frequency_penalty parameters
+                                     # ... setting these parameters will not trigger an error but will also have no
+                                     # effect", and the same page states thinking mode is ON by default (effort high).
+                                     # That is the mechanism behind the four-different-answers-at-temperature-0
+                                     # finding; it is not a bug in this call. Kept in the config and the cache key so a
+                                     # future endpoint that honours it cannot silently share labels with one that did
+                                     # not. Reliability therefore has to be BOUGHT (roadmap 5a, scripts/judge_probe.py).
+  max_tokens: 65536                  # OUTPUT budget, not context: deepseek-flash bills its reasoning out of
+                                     # this, and the 2026-09-14 demo saw up to 5,472 reasoning tokens per label. An
+                                     # unused ceiling costs nothing, so it is set well clear of anything observed.
+                                     # The endpoint's ceiling is 384K (393216) and its thinking-mode default is 64K,
+                                     # so this sits just under the default; the ~1M figure is the INPUT context and
+                                     # lives in max_input_tokens below.
+  effort: medium                     # DOES NOT REACH THE WIRE on this backend -- judge.py sends only the OpenAI-format
+                                     # fields, and DeepSeek maps medium to high anyway. Kept so the cache key stays
+                                     # well-formed. Use reasoning_effort if effort ever needs to be controlled.
+  max_concurrency: 2
+  max_input_tokens: 500000
+  samples_per_item: 1
+  control_fraction: 0.25             # ~20 of run 4's 80 control traces, for the judge's false-positive rate
+  nonfollower_fraction: 0.0          # exploratory: hint-followers and those controls only
+  limit: 5                           # THE DEMO KNOB. Five traces, then stop. Remove it to judge the rest of run 4.

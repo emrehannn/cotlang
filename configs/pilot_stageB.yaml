@@ -1,0 +1,35 @@
+# Pilot Stage B — mirrored input (Turkish question), Chinese trace language, and the two
+# hint-language arms. 11 cells x 500 = 5500 generations.
+# Shares runs/pilot with stage A, so the hint-language arm on the English question finds its
+# baseline (qen_ten_pzhao_cnone_clen) from stage A. Run after stage A has been reviewed.
+# The neutral-prefix control lives in pilot_stageA_neutral.yaml.
+name: pilot_stageB
+seed: 20260906
+paths: {workdir: runs/pilot, items: data/items_pilot.jsonl, items_exclude: data/items_exclude.txt, cache_dir: ~/.cache/cotlang}
+items: {dataset: CohereLabs/Global-MMLU, langs: [en, de, tr, zh], n: 100, require_label: CA, max_prompt_tokens: 400,
+        tokenizer: Qwen/Qwen3-4B, stratify_by: subject_category, order_by: subject_category,
+        sha256: 54d8848845cd2094c4b089668c223226aabf7e3e0190aba0c58582aa5fd7426b}
+server: {external: false, cache_ram_mib: 0, base_url: http://127.0.0.1:8080, binary: llama-server, model_repo: Qwen/Qwen3-4B-GGUF,
+         model_file: Qwen3-4B-Q8_0.gguf, parallel: 2, ctx_per_slot: 8192, extra_args: ["-ngl", "99", "-fa", "on"], startup_timeout_s: 300}
+sampling: {temperature: 0.6, top_p: 0.95, top_k: 20, max_tokens: 7900, request_timeout_s: 1800, k: 5}
+cells:
+  # mirrored input: Turkish question (note: Turkish items are community/machine translated, German and
+  # Chinese items are professional human translations — see docs/PLAN.md §4)
+  - {q_lang: tr, t_lang: tr, prefix: zhao, cue: none}
+  - {q_lang: tr, t_lang: tr, prefix: zhao, cue: sycophancy}
+  - {q_lang: tr, t_lang: tr, prefix: zhao, cue: metadata}
+  - {q_lang: tr, t_lang: en, prefix: zhao, cue: none}
+  - {q_lang: tr, t_lang: en, prefix: zhao, cue: sycophancy}
+  - {q_lang: tr, t_lang: en, prefix: zhao, cue: metadata}
+  # Chinese trace language on the English question (pivot vs habit test)
+  - {q_lang: en, t_lang: zh, prefix: zhao, cue: none}
+  - {q_lang: en, t_lang: zh, prefix: zhao, cue: sycophancy}
+  - {q_lang: en, t_lang: zh, prefix: zhao, cue: metadata}
+  # hint-language arms (salience vs subspace access); baselines: qtr_ttr_pzhao_cnone_cltr (above) and
+  # qen_ten_pzhao_cnone_clen (stage A)
+  - {q_lang: tr, t_lang: tr, prefix: zhao, cue: sycophancy, cue_lang: en}
+  - {q_lang: en, t_lang: en, prefix: zhao, cue: sycophancy, cue_lang: tr}
+# optional_cells (run only if time allows; German is expected to cluster with Turkish):
+#   - {q_lang: en, t_lang: en, prefix: none, cue: none}
+#   - {q_lang: en, t_lang: en, prefix: none, cue: sycophancy}
+judge: {enabled: true, backend: claude_code, model: claude-sonnet-5, effort: medium, max_concurrency: 2, control_fraction: 0.10}
